@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculatrice Budgétaire</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* ✅ Empêche Safari iOS d'agrandir automatiquement les textes */
+        html {
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro", "Helvetica Neue", sans-serif;
+            background-color: #f9fafb;
+            padding: 24px;
+            min-height: 100vh;
+            font-size: 20px;
+        }
+
+        .container {
+            max-width: 672px;
+            margin: 0 auto;
+        }
+
+        .input-row {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        /* Champs minimalistes */
+        input {
+            width: 100%;
+            border: none;
+            border-bottom: 2px solid #e5e7eb;
+            background: none;
+            padding: 12px 0;
+            font-size: 32px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        input::placeholder {
+            color: #9ca3af;
+        }
+
+        input:focus {
+            outline: none;
+            border-bottom-color: #3b82f6;
+        }
+
+        /* Bouton trois points */
+        .dropdown-btn {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            background: none;
+            border: none;
+            font-size: 32px;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .dropdown-btn::before {
+            content: "⋯";
+            color: #c5c8cf;
+        }
+
+        /* Menu déroulant */
+        .dropdown-menu {
+            position: absolute;
+            top: 110%;
+            right: -8px;
+            width: calc(100% + 16px);
+            background: white;
+            border: 2px solid #d1d5db;
+            border-radius: 12px;
+            display: none;
+            flex-direction: column;
+            z-index: 20;
+        }
+
+        .dropdown-item {
+            padding: 20px;
+            font-size: 30px;
+            cursor: pointer;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .dropdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .dropdown-item.edit-item {
+            font-style: italic;
+            color: #4b5563;
+        }
+
+        .dropdown-item:active {
+            background: #f3f4f6;
+        }
+
+        /* Boutons - et + */
+        .action-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 6px;
+            margin-left: -8px;
+            margin-right: -8px;
+            margin-bottom: 8px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 28px 0;
+            background-color: #111827;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 56px;
+            font-weight: 900;
+            cursor: pointer;
+        }
+
+        .action-btn:active {
+            background-color: #1f2937;
+        }
+
+        .minus-btn {
+            background-color: rgb(127, 127, 127);
+        }
+
+        .minus-btn:active {
+            background-color: rgb(100, 100, 100);
+        }
+
+        /* ---- ÉDITEUR LISTE RAPIDE ---- */
+        .presets-editor {
+            margin-top: 8px;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            background: #ffffff;
+            font-size: 32px;
+            margin-left: -8px;
+            margin-right: -8px;
+        }
+
+        .presets-editor-title {
+            font-size: 34px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 12px;
+        }
+
+        .presets-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+            align-items: center;
+            border-bottom: 2px solid #d1d5db;
+            padding-bottom: 6px;
+        }
+
+        .presets-row input {
+            font-size: 32px;
+            padding: 8px 10px;
+            border: none;
+            outline: none;
+            background: none;
+        }
+
+        .presets-name {
+            flex: 2;
+        }
+
+        .presets-amount {
+            flex: 1;
+            position: relative;
+        }
+
+        .presets-amount input {
+            padding-right: 40px;
+        }
+
+        .presets-amount::after {
+            content: "€";
+            position: absolute;
+            right: 0;
+            bottom: 8px;
+            font-size: 28px;
+            color: #9ca3af;
+        }
+
+        .presets-delete {
+            background: none;
+            border: none;
+            font-size: 40px;
+            color: #9ca3af;
+            cursor: pointer;
+            width: 40px;
+            line-height: 1;
+            align-self: flex-end;
+            padding-bottom: 4px;
+        }
+
+        .presets-delete:active {
+            color: #dc2626;
+        }
+
+        .presets-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .preset-btn {
+            padding: 8px 22px;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+            background: #f9fafb;
+            font-size: 24px;
+            cursor: pointer;
+            color: #111827;
+        }
+
+        .preset-btn.primary {
+            background: #111827;
+            color: white;
+        }
+
+        /* ---- LISTE DES OPÉRATIONS ---- */
+        .operations {
+            margin-top: 8px;
+        }
+
+        .operation {
+            display: flex;
+            align-items: center;
+            gap: 28px;
+            padding: 28px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .move-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .move-btn {
+            background: none;
+            border: none;
+            color: #9ca3af;
+            width: 24px;
+            height: 20px;
+            font-size: 20px;
+        }
+
+        .move-btn:active {
+            color: #3b82f6;
+        }
+
+        .move-btn:disabled {
+            color: #d1d5db;
+        }
+
+        .op-amount {
+            text-align: right;
+            flex-shrink: 0;
+            font-weight: 900;
+            font-size: 32px;
+            min-width: 100px;
+        }
+
+        .positive { color: #16a34a; }
+        .negative { color: #dc2626; }
+
+        .op-name {
+            flex: 1;
+            font-size: 32px;
+            font-weight: 700;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .op-balance {
+            text-align: right;
+            font-weight: 900;
+            font-size: 32px;
+            min-width: 140px;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #9ca3af;
+            font-size: 24px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="input-row">
+
+        <!-- Champ Opération -->
+        <div class="input-wrapper">
+            <input type="text" id="nameInput" placeholder="Opération">
+            <button class="dropdown-btn" onclick="toggleDropdown()"></button>
+            <div class="dropdown-menu" id="dropdownMenu"></div>
+        </div>
+
+        <!-- Champ Montant -->
+        <input type="number" id="amountInput" placeholder="Montant" step="0.01" inputmode="decimal">
+
+        <!-- Boutons - et + -->
+        <div class="action-row">
+            <button class="action-btn minus-btn" onclick="addNegative()">−</button>
+            <button class="action-btn" onclick="addOperation()">+</button>
+        </div>
+
+        <!-- Éditeur liste rapide -->
+        <div id="presetsEditor" class="presets-editor" style="display:none;">
+            <div class="presets-editor-title">Modifier la liste rapide</div>
+
+            <div id="presetsList"></div>
+
+            <div class="presets-actions">
+                <button class="preset-btn" onclick="addPresetRow()">+ Ajouter une ligne</button>
+                <button class="preset-btn primary" onclick="savePresets()">Terminer</button>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="operations" id="operations"></div>
+
+</div>
+
+<script>
+    let operations = [];
+    let presets = [
+        { name: "Courses", amount: -50 },
+        { name: "Essence", amount: -20 },
+        { name: "Restaurant", amount: -30 },
+        { name: "Dépôt", amount: 100 },
+        { name: "Retrait", amount: -40 }
+    ];
+
+    function toggleDropdown() {
+        const m = document.getElementById("dropdownMenu");
+        m.style.display = m.style.display === "flex" ? "none" : "flex";
+    }
+
+    function renderDropdown() {
+        const menu = document.getElementById("dropdownMenu");
+        menu.innerHTML = "";
+
+        presets.forEach(p => {
+            const item = document.createElement("div");
+            item.className = "dropdown-item";
+            item.textContent = `${p.name} (${p.amount >= 0 ? "+" : ""}${p.amount} €)`;
+            item.onclick = () => selectOperation(p.name, p.amount);
+            menu.appendChild(item);
+        });
+
+        const editItem = document.createElement("div");
+        editItem.className = "dropdown-item edit-item";
+        editItem.textContent = "Modifier…";
+        editItem.onclick = () => {
+            toggleDropdown();
+            openPresetsEditor();
+        };
+        menu.appendChild(editItem);
+    }
+
+    function selectOperation(name, amount) {
+        nameInput.value = name;
+        amountInput.value = amount;
+        toggleDropdown();
+        push(name, amount);
+    }
+
+    function addOperation() {
+        const name = nameInput.value.trim();
+        const amount = parseFloat(amountInput.value);
+        if (!isNaN(amount)) push(name, amount);
+    }
+
+    function addNegative() {
+        const name = nameInput.value.trim();
+        const amount = parseFloat(amountInput.value);
+        if (!isNaN(amount)) push(name, -Math.abs(amount));
+    }
+
+    function push(name, amount) {
+        const last = operations.length ? operations[operations.length - 1].balance : 0;
+
+        operations.push({
+            id: Date.now(),
+            name,
+            amount,
+            balance: last + amount
+        });
+
+        nameInput.value = "";
+        amountInput.value = "";
+        render();
+    }
+
+    function openPresetsEditor() {
+        const list = document.getElementById("presetsList");
+        list.innerHTML = "";
+        presets.forEach(p => addPresetRow(p.name, p.amount));
+        document.getElementById("presetsEditor").style.display = "block";
+    }
+
+    function addPresetRow(name = "", amount = "") {
+        const list = document.getElementById("presetsList");
+
+        const row = document.createElement("div");
+        row.className = "presets-row";
+
+        const nameInput = document.createElement("input");
+        nameInput.className = "presets-name";
+        nameInput.placeholder = "Nom";
+        nameInput.value = name;
+
+        const amountInput = document.createElement("input");
+        amountInput.className = "presets-amount";
+        amountInput.placeholder = "Montant";
+        amountInput.value = amount;
+
+        const delBtn = document.createElement("button");
+        delBtn.className = "presets-delete";
+        delBtn.innerHTML = "×";
+        delBtn.onclick = () => row.remove();
+
+        row.append(nameInput, amountInput, delBtn);
+        list.appendChild(row);
+    }
+
+    function savePresets() {
+        const rows = Array.from(document.querySelectorAll(".presets-row"));
+        const newList = [];
+
+        rows.forEach(row => {
+            const name = row.querySelector(".presets-name").value.trim();
+            const amount = parseFloat(row.querySelector(".presets-amount").value);
+            if (name && !isNaN(amount)) {
+                newList.push({ name, amount });
+            }
+        });
+
+        if (newList.length) {
+            presets = newList;
+            renderDropdown();
+        }
+
+        document.getElementById("presetsEditor").style.display = "none";
+    }
+
+    function render() {
+        const container = document.getElementById("operations");
+        container.innerHTML = "";
+        let balance = 0;
+
+        operations.forEach((op, i) => {
+            balance += op.amount;
+
+            const row = document.createElement("div");
+            row.className = "operation";
+
+            const mv = document.createElement("div");
+            mv.className = "move-buttons";
+
+            const upBtn = document.createElement("button");
+            upBtn.className = "move-btn";
+            upBtn.innerHTML = "▲";
+            upBtn.disabled = i === 0;
+            upBtn.onclick = () => {
+                [operations[i - 1], operations[i]] = [operations[i], operations[i - 1]];
+                render();
+            };
+
+            const downBtn = document.createElement("button");
+            downBtn.className = "move-btn";
+            downBtn.innerHTML = "▼";
+            downBtn.disabled = i === operations.length - 1;
+            downBtn.onclick = () => {
+                [operations[i], operations[i + 1]] = [operations[i + 1], operations[i]];
+                render();
+            };
+
+            mv.append(upBtn, downBtn);
+
+            const amount = document.createElement("div");
+            amount.className = "op-amount " + (op.amount >= 0 ? "positive" : "negative");
+            amount.textContent = (op.amount >= 0 ? "+" : "") + op.amount.toFixed(2) + " €";
+
+            const name = document.createElement("div");
+            name.className = "op-name";
+            name.textContent = op.name;
+
+            const bal = document.createElement("div");
+            bal.className = "op-balance";
+            bal.textContent = balance.toFixed(2) + " €";
+
+            const delBtn = document.createElement("button");
+            delBtn.className = "delete-btn";
+            delBtn.innerHTML = "×";
+            delBtn.onclick = () => {
+                operations = operations.filter(x => x.id !== op.id);
+                render();
+            };
+
+            row.append(mv, amount, name, bal, delBtn);
+            container.append(row);
+        });
+    }
+
+    renderDropdown();
+</script>
+
+</body>
+</html>
